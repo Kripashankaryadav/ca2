@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: echo "No tests yet"
+
+      - name: Build Docker Image
+        run: docker build -t my-api .
+
+      - name: Test Docker Container
+        run: |
+          docker run -d --name my-container -p 3000:3000 my-api
+          sleep 5
+          curl -f http://localhost:3000/health
+          docker stop my-container
+          docker rm my-container
+
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push Docker Image
+        run: |
+          docker tag my-api ${{ secrets.DOCKER_USERNAME }}/my-api
+          docker push ${{ secrets.DOCKER_USERNAME }}/my-api
